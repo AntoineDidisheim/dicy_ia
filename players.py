@@ -43,13 +43,13 @@ class Player:
     def process_card_count(self, cards):
         res = []
         for i in range(1, 13):
-            count = np.sum(cards == i)
+            count = (np.sum(cards == i)-1.5)/1.5  #centered and standardized
             res.append(count)
         return res
 
     def create_bet_or_follow_input(self, bet=True):
         res = np.append(self.process_card_count(self.history_known_cards), self.create_score(self.current_card))
-        res = np.append(res, self.dice)
+        res = np.append(res, (self.dice-3.5)/3.5)
         for i in range(1, 13):
             res = np.append(res, self.create_score(i))
 
@@ -59,7 +59,7 @@ class Player:
     def create_card_choice_input(self):
         res = np.append(self.process_card_count(self.history_known_cards),
                         self.process_card_count(self.hand))
-        res = np.append(res, self.dice)
+        res = np.append(res, (self.dice-3.5)/3.5)
 
         for i in range(1, 13):
             res = np.append(res, self.create_score(i))

@@ -53,7 +53,7 @@ class Brain():
             self.sess_card.run(tf.global_variables_initializer())
             self.saver_card = tf.train.Saver()
 
-    def define_two_layer_nnet(self, input_dim, output_dim, h1_dim=200):
+    def define_two_layer_nnet(self, input_dim, output_dim, h1_dim=500):
         x = tf.placeholder(tf.float32, [None, input_dim])
         y = tf.placeholder(tf.float32, [None, output_dim])
         w1 = tf.Variable(tf.random_normal([input_dim, h1_dim]))
@@ -62,9 +62,14 @@ class Brain():
         w2 = tf.Variable(tf.random_normal([h1_dim, h1_dim]))
         b2 = tf.Variable(tf.constant(0.1, shape=[h1_dim]))
         h2 = tf.nn.relu(tf.matmul(h1, w2) + b2)
-        w3 = tf.Variable(tf.random_normal([h1_dim, output_dim]))
-        b3 = tf.Variable(tf.constant(0.01, shape=[output_dim]))
-        q = tf.add(tf.matmul(h2, w3), b3)
+
+        w3 = tf.Variable(tf.random_normal([h1_dim, h1_dim]))
+        b3 = tf.Variable(tf.constant(0.1, shape=[h1_dim]))
+        h3 = tf.nn.relu(tf.matmul(h2, w3) + b3)
+
+        w4 = tf.Variable(tf.random_normal([h1_dim, output_dim]))
+        b4 = tf.Variable(tf.constant(0.01, shape=[output_dim]))
+        q = tf.add(tf.matmul(h3, w4), b4)
         return x, y, q, w3
 
     def new_path_file(self,game_id):

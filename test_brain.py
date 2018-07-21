@@ -9,7 +9,7 @@ import time
 brain_trained = Brain(id=0)
 
 brain_trained.new_path_file(100000)
-# brain_trained.restore_all_nets()
+brain_trained.restore_all_nets()
 brain_new = Brain(id="untrained")
 
 # creating the players with shared brain
@@ -29,7 +29,7 @@ players_bet = [[], []]
 
 t = time.time()
 # start the loop of number of game played in simulation
-for full_game_id in range(10000000000000000000):
+for full_game_id in range(500):
     # start the round
     game = Game(verbose=False)
     hands = game.start_round()
@@ -51,7 +51,7 @@ for full_game_id in range(10000000000000000000):
             game.card_played.append(players[i].decide_card_to_play(game.dice))
 
         card1 = game.card_played[first_player]
-        card2= game.card_played[1-first_player]
+        card2 = game.card_played[1-first_player]
 
 
         # now first player decide if he bet
@@ -71,6 +71,7 @@ for full_game_id in range(10000000000000000000):
                 pl2.add_to_score(1)
         else:
             follow = pl2.decide_to_follow()
+            players_follow[1-first_player].append(follow)
             if not follow:
                 # here player 2 fold so we update his following and player 1 betting
                 if card1 == 1:
@@ -110,6 +111,7 @@ for full_game_id in range(10000000000000000000):
                         # pl1.update_betting_strategies(-2)
                         pl2.add_to_score(2)
                         # pl2.update_following_strategies(-2)
+        game.end_of_phase()
     if full_game_id%1000==0:
         print('Game ',full_game_id, 'finished')
     score_player_0.append(players[0].current_score)

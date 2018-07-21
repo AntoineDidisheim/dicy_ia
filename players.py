@@ -96,6 +96,7 @@ class Player:
         self.dice = dice  # we update the dice at this stage
         # now random but it will be function of the dice roll
 
+        # if random.random() <= 1:
         if random.random() <= self.epsilon:
             choice = np.random.choice(self.hand, size=1)
         else:
@@ -290,7 +291,7 @@ class PlayerNNetWithExternalBrain(Player):
         predicted_profits = self.brain.sess_follow.run(self.brain.q_follow,
                                                        feed_dict={self.brain.x_follow: self.create_bet_or_follow_input()})
         if get_bool_answer:
-            res = predicted_profits > 0
+            res = predicted_profits >= 0
         else:
             res = predicted_profits
         return res
@@ -298,7 +299,7 @@ class PlayerNNetWithExternalBrain(Player):
     def high_choice_of_bet(self, get_bool_answer=True):
         predicted_profits = self.brain.sess_bet.run(self.brain.q_bet, feed_dict={self.brain.x_bet: self.create_bet_or_follow_input()})
         if get_bool_answer:
-            res = predicted_profits > 0
+            res = predicted_profits >= 0
         else:
             res = predicted_profits
         return res

@@ -5,15 +5,27 @@ import random
 from brain import Brain
 import time
 
-# creating the shared brain
-brain = Brain()
+# creating the individual brain
+brain_trained = Brain(id=0)
+
+brain_trained.new_path_file(100000)
+# brain_trained.restore_all_nets()
+brain_new = Brain(id="untrained")
 
 # creating the players with shared brain
 nb_players = 2
-players = []
-for i in range(nb_players):
-    pl = PlayerNNetWithExternalBrain(id=i, brain=brain)  # notice that the same instance is used for the brain
-    players.append(pl)
+players = [PlayerNNetWithExternalBrain(brain=brain_trained,id='trained'),
+           PlayerNNetWithExternalBrain(brain=brain_new,id='untrained')]
+
+# the second player has the bad brain and a full random behavior
+players[0].epsilon=0
+players[1].epsilon=1
+
+# the rest is similar to training except player are different and I disabeled learning
+score_player_0 = []
+score_player_1 = []
+players_follow = [[], []]
+players_bet = [[], []]
 
 t = time.time()
 # start the loop of number of game played in simulation
@@ -44,6 +56,7 @@ for full_game_id in range(10000000000000000000):
 
         # now first player decide if he bet
         bet = pl1.decide_to_bet()
+        players_bet[first_player].append(bet)
         follow = "not relevant"
         res = "not_relevant"
         if not bet:
@@ -62,14 +75,14 @@ for full_game_id in range(10000000000000000000):
                 # here player 2 fold so we update his following and player 1 betting
                 if card1 == 1:
                     pl1.add_to_score(4)
-                    pl1.update_betting_strategies(4)
+                    # pl1.update_betting_strategies(4)
                     pl2.add_to_score(-4)
-                    pl2.update_following_strategies(-4)
+                    # pl2.update_following_strategies(-4)
                 else:
                     pl1.add_to_score(1)
-                    pl1.update_betting_strategies(1)
+                    # pl1.update_betting_strategies(1)
                     pl2.add_to_score(-1)
-                    pl2.update_following_strategies(-1)
+                    # pl2.update_following_strategies(-1)
             else:
                 # here we have a followed bet. The game will be resolved through score
                 # first we add the revealed card to known history
@@ -80,30 +93,35 @@ for full_game_id in range(10000000000000000000):
                 if res == -1:
                     # draw
                     pl1.add_to_score(0)
-                    pl1.update_betting_strategies(0)
+                    # pl1.update_betting_strategies(0)
                     pl2.add_to_score(0)
-                    pl2.update_betting_strategies(0)
+                    # pl2.update_betting_strategies(0)
                 else:
                     # we have a winner and res is the index
                     if res == first_player:
                         # pl1 wins!
                         pl1.add_to_score(2)
-                        pl1.update_betting_strategies(2)
+                        # pl1.update_betting_strategies(2)
                         pl2.add_to_score(-2)
-                        pl2.update_following_strategies(-2)
+                        # pl2.update_following_strategies(-2)
                     else:
                         # pl2 wins!
                         pl1.add_to_score(-2)
-                        pl1.update_betting_strategies(-2)
+                        # pl1.update_betting_strategies(-2)
                         pl2.add_to_score(2)
-                        pl2.update_following_strategies(-2)
-        # end of p
-        game.end_of_phase()
-    # end of game
+                        # pl2.update_following_strategies(-2)
     if full_game_id%1000==0:
         print('Game ',full_game_id, 'finished')
-    if full_game_id%10000==0:
-        brain.new_path_file(game_id=full_game_id)
-        brain.save_all_nets()
-        print("save brain progress")
+    score_player_0.append(players[0].current_score)
+    score_player_1.append(players[1].current_score)
 
+
+from matplotlib import pyplot as plt
+plt.plot(score_player_0)
+plt.show()
+
+
+print('mean bet player trained:', np.mean(players_bet[0]))
+print('mean bet player UNTRAINED:', np.mean(players_bet[1]))
+print('mean follow player trained:', np.mean(players_follow[0]))
+print('mean follow player UNTRAINED:', np.mean(players_follow[1]))

@@ -93,3 +93,4 @@ class Brain():
             self.saver_follow.restore(sess=self.sess_follow, save_path=self.path_follow+'m.ckpt')
         with self.graph_bet.as_default() as g:
             self.saver_bet.restore(sess=self.sess_bet, save_path=self.path_bet+'m.ckpt')
+

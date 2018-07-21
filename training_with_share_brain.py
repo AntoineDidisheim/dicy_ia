@@ -17,7 +17,7 @@ for i in range(nb_players):
 
 t = time.time()
 # start the loop of number of game played in simulation
-for full_game_id in range(1000):
+for full_game_id in range(10000000000000000000):
     # start the round
     game = Game(verbose=False)
     hands = game.start_round()
@@ -95,9 +95,10 @@ for full_game_id in range(1000):
         # end of p
         game.end_of_phase()
     # end of game
-    # print('Game ',full_game_id, 'finished')
-    # brain.new_path_file(game_id=full_game_id)
-    # brain.save_all_nets()
+    if full_game_id%1000==0:
+        print('Game ',full_game_id, 'finished')
+    if full_game_id%10000==0:
+        brain.new_path_file(game_id=full_game_id)
+        brain.save_all_nets()
+        print("save brain progress")
 
-final_time = time.time()-t
-print(final_time)

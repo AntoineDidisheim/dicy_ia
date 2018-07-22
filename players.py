@@ -50,6 +50,7 @@ class Player:
     def create_bet_or_follow_input(self, bet=True):
         res = np.append(self.process_card_count(self.history_known_cards), self.create_score(self.current_card))
         res = np.append(res, (self.dice-3.5)/3.5)
+
         for i in range(1, 13):
             res = np.append(res, self.create_score(i))
 
@@ -66,6 +67,7 @@ class Player:
 
         res = res.reshape((1, len(res)))
         return res
+
 
     def create_score(self, value):
         score = 0

@@ -43,16 +43,16 @@ class Player:
     def process_card_count(self, cards):
         res = []
         for i in range(1, 13):
-            count = (np.sum(cards == i)-1.5)/1.5  #centered and standardized
+            count = (np.sum(cards == i) - 1.5) / 1.5  # centered and standardized
             res.append(count)
         return res
 
     def create_bet_or_follow_input(self, bet=True):
         res = np.append(self.process_card_count(self.history_known_cards), self.create_score(self.current_card))
-        res = np.append(res, (self.dice-3.5)/3.5)
+        res = np.append(res, (self.dice - 3.5) / 3.5)
 
-        for i in range(1, 13):
-            res = np.append(res, self.create_score(i))
+        # for i in range(1, 13):
+        #     res = np.append(res, self.create_score(i))
 
         res = res.reshape((1, len(res)))
         return res
@@ -60,14 +60,24 @@ class Player:
     def create_card_choice_input(self):
         res = np.append(self.process_card_count(self.history_known_cards),
                         self.process_card_count(self.hand))
-        res = np.append(res, (self.dice-3.5)/3.5)
+        res = np.append(res, (self.dice - 3.5) / 3.5)
 
-        for i in range(1, 13):
-            res = np.append(res, self.create_score(i))
+        # for i in range(1, 13):
+        #     res = np.append(res, self.create_score(i))
 
         res = res.reshape((1, len(res)))
         return res
 
+    def create_bluff_choice_input(self):
+        res = np.append(self.process_card_count(self.history_known_cards),
+                        self.process_card_count(self.hand))
+        res = np.append(res, (self.dice - 3.5) / 3.5)
+
+        # for i in range(1, 13):
+        #     res = np.append(res, self.create_score(i))
+
+        res = res.reshape((1, len(res)))
+        return res
 
     def create_score(self, value):
         score = 0
@@ -263,24 +273,32 @@ class PlayerNNet(Player):
 
 
 class PlayerNNetWithExternalBrain(Player):
-    def __init__(self, brain, epsilon=0.1, id=0):
+    def __init__(self, brain, epsilon=0.1, id=0, yes_man = False):
         super().__init__(epsilon=epsilon)
         self.id = "player" + str(id)
         self.brain = brain
+        self.yes_man = yes_man
 
     def update_betting_strategies(self, reward):
-        self.update_card_strategy(reward)
+        # self.update_card_strategy(reward)
         reward = np.array([reward]).reshape((1, 1))
         self.brain.sess_bet.run(self.brain.train_op_bet,
                                 feed_dict={self.brain.x_bet: self.create_bet_or_follow_input(),
                                            self.brain.y_bet: reward})
 
     def update_following_strategies(self, reward):
-        self.update_card_strategy(reward)
+        # self.update_card_strategy(reward)
         reward = np.array([reward]).reshape((1, 1))
         self.brain.sess_follow.run(self.brain.train_op_follow,
                                    feed_dict={self.brain.x_follow: self.create_bet_or_follow_input(),
                                               self.brain.y_follow: reward})
+
+    def update_bluff_strategies(self, reward):
+        # self.update_card_strategy(reward)
+        reward = np.array([reward]).reshape((1, 1))
+        self.brain.sess_bluff.run(self.brain.train_op_bluff,
+                                  feed_dict={self.brain.x_bluff: self.create_bluff_choice_input(),
+                                             self.brain.y_bluff: reward})
 
     def update_card_strategy(self, reward):
         y = np.zeros(shape=(1, 12))
@@ -291,23 +309,47 @@ class PlayerNNetWithExternalBrain(Player):
 
     def high_choice_of_follow(self, get_bool_answer=True):
         predicted_profits = self.brain.sess_follow.run(self.brain.q_follow,
-                                                       feed_dict={self.brain.x_follow: self.create_bet_or_follow_input()})
+                                                       feed_dict={
+                                                           self.brain.x_follow: self.create_bet_or_follow_input()})
         if get_bool_answer:
             res = predicted_profits >= 0
         else:
             res = predicted_profits
+
+        if self.yes_man:
+            res = True
+
         return res
 
     def high_choice_of_bet(self, get_bool_answer=True):
-        predicted_profits = self.brain.sess_bet.run(self.brain.q_bet, feed_dict={self.brain.x_bet: self.create_bet_or_follow_input()})
+        predicted_profits = self.brain.sess_bet.run(self.brain.q_bet,
+                                                    feed_dict={self.brain.x_bet: self.create_bet_or_follow_input()})
         if get_bool_answer:
             res = predicted_profits >= 0
         else:
             res = predicted_profits
+
+        if self.yes_man:
+            res = True
+
+        return res
+
+    def high_choice_bluff(self, get_bool_answer=True):
+        predicted_profits = self.brain.sess_bluff.run(self.brain.q_bluff,
+                                                      feed_dict={self.brain.x_bluff: self.create_bluff_choice_input()})
+        if get_bool_answer:
+            res = predicted_profits >= 0
+        else:
+            res = predicted_profits
+
+        if self.yes_man:
+            res = True
+
         return res
 
     def high_choice_of_card(self):
-        predicted_profits = self.brain.sess_card.run(self.brain.q_card, feed_dict={self.brain.x_card: self.create_card_choice_input()})
+        predicted_profits = self.brain.sess_card.run(self.brain.q_card,
+                                                     feed_dict={self.brain.x_card: self.create_card_choice_input()})
         predicted_profits = predicted_profits.reshape(12)
         # we have a predicted profits for all potential cards
         # first we create a list of index of cards that we can play
@@ -320,3 +362,30 @@ class PlayerNNetWithExternalBrain(Player):
         return card
 
         # print(self.sess_card.run(self.testW))
+
+    def decide_card_to_play(self, dice):
+        self.dice = dice  # we update the dice at this stage
+        # now random but it will be function of the dice roll
+
+        m_score = -10000
+        choice = 'not_selected'
+        for c in self.hand:
+            s = self.create_score(c)
+            if s > m_score:
+                m_score = s
+                choice = c
+
+        if 1 in self.hand:
+            # we can and maybe should bluff
+            if random.random() <= self.epsilon:
+                bluff = random.random() < 0.5
+            else:
+                bluff = self.high_choice_bluff()
+            if bluff:
+                choice = 1
+
+        # finally we decide if or not we do change the card
+        self.hand = self.del_cards_from_array(array_to_del=np.array([choice]),
+                                              from_this_array=self.hand)
+        self.current_card = choice
+        return np.array([choice])

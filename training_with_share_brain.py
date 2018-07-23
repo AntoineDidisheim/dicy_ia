@@ -48,6 +48,9 @@ for full_game_id in range(10000000000000000000):
         res = "not_relevant"
         if not bet:
             # the first player did not bet game over right now, update money and learning on bet
+            # whatever is the true win we update the bluff strategy as should have bluffed
+            if 1 in pl2.hand or card2 ==1:
+                pl2.update_bluff_strategies(4)
             if card2 == 1:  # check if second player card is the troll
                 pl1.add_to_score(-4)
                 pl1.update_betting_strategies(-4)
@@ -57,8 +60,15 @@ for full_game_id in range(10000000000000000000):
                 pl1.update_betting_strategies(-1)
                 pl2.add_to_score(1)
         else:
+            # since pl1 decided to bet, pl2 shouldn't have bluff so we learn
+            if card2 == 1:
+                pl2.update_bluff_strategies(-2)
+
             follow = pl2.decide_to_follow()
             if not follow:
+                # learn that should have bluffed if possible for pl 1 since pl2 folded
+                if 1 in pl1.hand or card1 == 1:
+                    pl1.update_bluff_strategies(4)
                 # here player 2 fold so we update his following and player 1 betting
                 if card1 == 1:
                     pl1.add_to_score(4)
@@ -71,6 +81,9 @@ for full_game_id in range(10000000000000000000):
                     pl2.add_to_score(-1)
                     pl2.update_following_strategies(-1)
             else:
+                # learn that should not have bluffed if followed as pl2 followed
+                if card1 == 1:
+                    pl1.update_bluff_strategies(-2)
                 # here we have a followed bet. The game will be resolved through score
                 # first we add the revealed card to known history
                 for i in range(nb_players):

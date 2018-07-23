@@ -6,12 +6,13 @@ from players import PlayerNNet
 
 class Brain():
     def __init__(self, id=0):
-        self.id = "brain"+str(id)
+        self.id = "brain" + str(id)
 
         # creating the saving path and, if need be, directories
         self.path_card = 'saved_model/' + str(self.id) + '/card_model/'
         self.path_bet = 'saved_model/' + str(self.id) + '/bet_model/'
         self.path_follow = 'saved_model/' + str(self.id) + '/follow_model/'
+        self.path_bluff = 'saved_model/' + str(self.id) + '/bluff_model/'
         self.create_path_file()
 
         # we create a temp player just to get the correct dimension we will need for net in and out
@@ -44,7 +45,7 @@ class Brain():
         # defining the card nnet
         self.graph_card = tf.Graph()
         with self.graph_card.as_default() as g:
-            self.x_card, self.y_card, self.q_card, self.testW= self.define_two_layer_nnet(
+            self.x_card, self.y_card, self.q_card, self.testW = self.define_two_layer_nnet(
                 input_dim=max(playerTemp.create_card_choice_input().shape),
                 output_dim=12)
             loss = tf.square(self.y_card - self.q_card)  # keeping square here include risk aversion
@@ -52,6 +53,18 @@ class Brain():
             self.sess_card = tf.Session(graph=g)
             self.sess_card.run(tf.global_variables_initializer())
             self.saver_card = tf.train.Saver()
+
+        # defining the bluff nnet
+        self.graph_bluff = tf.Graph()
+        with self.graph_bluff.as_default() as g:
+            self.x_bluff, self.y_bluff, self.q_bluff, self.testW = self.define_two_layer_nnet(
+                input_dim=max(playerTemp.create_bluff_choice_input().shape),
+                output_dim=1)
+            loss = tf.square(self.y_bluff - self.q_bluff)  # keeping square here include risk aversion
+            self.train_op_bluff = tf.train.AdagradOptimizer(0.01).minimize(loss)
+            self.sess_bluff = tf.Session(graph=g)
+            self.sess_bluff.run(tf.global_variables_initializer())
+            self.saver_bluff = tf.train.Saver()
 
     def define_two_layer_nnet(self, input_dim, output_dim, h1_dim=500):
         x = tf.placeholder(tf.float32, [None, input_dim])
@@ -72,10 +85,11 @@ class Brain():
         q = tf.add(tf.matmul(h3, w4), b4)
         return x, y, q, w3
 
-    def new_path_file(self,game_id):
-        self.path_card = 'saved_model/' + str(self.id) + '/game_'+str(game_id)+'/card_model/'
-        self.path_bet = 'saved_model/' + str(self.id) + '/game_'+str(game_id)+'/bet_model/'
-        self.path_follow = 'saved_model/' + str(self.id) + '/game_'+str(game_id)+'/follow_model/'
+    def new_path_file(self, game_id):
+        self.path_card = 'saved_model/' + str(self.id) + '/game_' + str(game_id) + '/card_model/'
+        self.path_bet = 'saved_model/' + str(self.id) + '/game_' + str(game_id) + '/bet_model/'
+        self.path_follow = 'saved_model/' + str(self.id) + '/game_' + str(game_id) + '/follow_model/'
+        self.path_bluff = 'saved_model/' + str(self.id) + '/game_' + str(game_id) + '/bluff_model/'
         self.create_path_file()
 
     def create_path_file(self):
@@ -87,15 +101,17 @@ class Brain():
             os.makedirs(self.path_follow)
 
     def save_all_nets(self):
-        self.saver_card.save(sess=self.sess_card, save_path=self.path_card+'m.ckpt')
-        self.saver_follow.save(sess=self.sess_follow, save_path=self.path_follow+'m.ckpt')
-        self.saver_bet.save(sess=self.sess_bet, save_path=self.path_bet+'m.ckpt')
+        self.saver_card.save(sess=self.sess_card, save_path=self.path_card + 'm.ckpt')
+        self.saver_follow.save(sess=self.sess_follow, save_path=self.path_follow + 'm.ckpt')
+        self.saver_bet.save(sess=self.sess_bet, save_path=self.path_bet + 'm.ckpt')
+        self.saver_bluff.save(sess=self.sess_bluff, save_path=self.path_bluff + 'm.ckpt')
 
     def restore_all_nets(self):
-        with self.graph_card.as_default() as g:
-            self.saver_card.restore(sess=self.sess_card,save_path=self.path_card+'m.ckpt')
+        # with self.graph_card.as_default() as g:
+        #     self.saver_card.restore(sess=self.sess_card, save_path=self.path_card + 'm.ckpt')
         with self.graph_follow.as_default() as g:
-            self.saver_follow.restore(sess=self.sess_follow, save_path=self.path_follow+'m.ckpt')
+            self.saver_follow.restore(sess=self.sess_follow, save_path=self.path_follow + 'm.ckpt')
         with self.graph_bet.as_default() as g:
-            self.saver_bet.restore(sess=self.sess_bet, save_path=self.path_bet+'m.ckpt')
-
+            self.saver_bet.restore(sess=self.sess_bet, save_path=self.path_bet + 'm.ckpt')
+        with self.graph_bluff.as_default() as g:
+            self.saver_bluff.restore(sess=self.sess_bluff, save_path=self.path_bluff + 'm.ckpt')

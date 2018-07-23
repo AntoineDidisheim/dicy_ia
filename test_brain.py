@@ -8,9 +8,11 @@ import time
 # creating the individual brain
 brain_trained = Brain(id=0)
 
-brain_trained.new_path_file(290000)
+brain_trained.new_path_file(870000)
 brain_trained.restore_all_nets()
-brain_new = Brain(id="untrained")
+brain_new = Brain(id=0)
+brain_new.new_path_file(170000)
+brain_new.restore_all_nets()
 
 # creating the players with shared brain
 nb_players = 2
@@ -20,6 +22,8 @@ players = [PlayerNNetWithExternalBrain(brain=brain_trained,id='trained'),
 # the second player has the bad brain and a full random behavior
 players[0].epsilon=0
 players[1].epsilon=0
+# setting untrained player to always bet
+# players[1].yes_man=True
 
 # the rest is similar to training except player are different and I disabeled learning
 score_player_0 = []

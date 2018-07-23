@@ -1,3 +1,4 @@
+### not to date with last version of trained brained
 from game import Game
 from players import PlayerNNetWithExternalBrain
 import numpy as np
@@ -5,10 +6,11 @@ import random
 from brain import Brain
 import time
 
+
 # creating the individual brain
 brain_trained = Brain(id=0)
 
-brain_trained.new_path_file(290000)
+brain_trained.new_path_file(0)
 brain_trained.restore_all_nets()
 brain_new = Brain(id="untrained")
 
